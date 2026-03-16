@@ -50,18 +50,23 @@ export async function POST(request: Request) {
   }
 
   if (event.type === "user.created" || event.type === "user.updated") {
-    const { id: clerkId, phone_numbers, public_metadata } = event.data;
+    const { id: clerkId, email_addresses, phone_numbers, public_metadata } = event.data;
+
+    const primaryEmail = email_addresses?.find(
+      (e) => e.id === event.data.primary_email_address_id
+    );
+    const email = primaryEmail?.email_address;
 
     const primaryPhone = phone_numbers?.find(
       (p) => p.id === event.data.primary_phone_number_id
     );
-    const phoneNumber = primaryPhone?.phone_number ?? "";
+    const phoneNumber = primaryPhone?.phone_number;
 
     // Role is set in Clerk public_metadata at onboarding.
     // Default to "student" when not yet set (first sign-up).
     const role = (public_metadata?.role as UserRole | undefined) ?? "student";
 
-    await syncClerkUser({ clerkId, phoneNumber, role });
+    await syncClerkUser({ clerkId, email, phoneNumber, role });
   }
 
   if (event.type === "user.deleted") {

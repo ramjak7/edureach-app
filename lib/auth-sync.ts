@@ -8,11 +8,13 @@ import type { UserRole } from "@/types";
  */
 export async function syncClerkUser({
   clerkId,
+  email,
   phoneNumber,
   role,
 }: {
   clerkId: string;
-  phoneNumber: string;
+  email?: string;
+  phoneNumber?: string;
   role: UserRole;
 }) {
   return db.user.upsert({
@@ -20,7 +22,8 @@ export async function syncClerkUser({
     update: { lastActiveAt: new Date() },
     create: {
       clerkId,
-      phoneNumber,
+      email: email ?? null,
+      phoneNumber: phoneNumber ?? null,
       role,
     },
   });

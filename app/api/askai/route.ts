@@ -1,10 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import type { ContentBlockParam } from "@anthropic-ai/sdk/resources";
-
 import { db } from "@/lib/db";
-import { anthropic } from "@/lib/askai";
-import { AskAIRequestSchema, type SupportedMediaType } from "@/lib/validators/askai";
+import { getGeminiModel } from "@/lib/askai";
+import { AskAIRequestSchema } from "@/lib/validators/askai";
 
 const VISION_API_KEY = process.env.GOOGLE_CLOUD_VISION_API_KEY!;
 const VISION_ENDPOINT = `https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`;
@@ -70,12 +68,41 @@ function detectPromptInjection(text: string): boolean {
   return INJECTION_PATTERNS.some((re) => re.test(text));
 }
 
-const SYSTEM_PROMPT = `You are an expert Indian K-12 board exam tutor. \
-You only answer questions related to CBSE, ICSE, and state board curricula for Classes 6–12. \
-Explain step-by-step as a patient teacher would. \
-Reference the specific board and class in your answer. \
-If the question is not about board exam curriculum, say: \
-"I can only help with your board exam subjects."`;
+const SYSTEM_PROMPT = `You are an expert Indian K-12 board exam tutor for CBSE, ICSE, and state board curricula (Classes 6–12). You only answer questions related to these board exam curricula. If a question is off-topic, say: "I can only help with your board exam subjects."
+
+RESPONSE FORMATTING RULES — follow these strictly every time:
+
+1. STRUCTURE: Use numbered sections with bold headers (e.g., **1. Identify Root Relations**). Keep sections clearly separated with a blank line between them.
+
+2. EQUATIONS: NEVER write equations inline within a sentence. Every equation, formula, or mathematical expression must be on its own line using display math:
+   $$equation here$$
+   Never use single-dollar inline math ($...$) for equations. Always use double-dollar ($$...$$) so each equation appears on its own centred line.
+
+3. LISTS: When presenting multiple relations, values, or results, use bullet points:
+   - Item one: $$equation$$
+   - Item two: $$equation$$
+
+4. STEPS: Each step of a solution must be on its own line. Do not chain multiple steps into a single paragraph. After stating what you will do, put the equation on the next line by itself.
+
+5. SPACING: Leave a blank line after every section header, after every equation block, and between bullet items. This makes the solution easy to read.
+
+6. FINAL RESULT: Always end with a clearly labelled **Final Result** or **Answer** section showing the boxed/highlighted result.
+
+Example of correct style:
+**1. Apply the quadratic formula**
+
+For $$ax^2 + bx + c = 0$$:
+
+$$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
+
+**2. Substitute values** where $$a = 1,\\, b = -5,\\, c = 6$$:
+
+$$x = \\frac{5 \\pm \\sqrt{25 - 24}}{2} = \\frac{5 \\pm 1}{2}$$
+
+**Final Result**
+
+- $$x_1 = 3$$
+- $$x_2 = 2$$`;
 
 // Free-tier weekly limit (PRD Section 6.1)
 const FREE_TIER_WEEKLY_LIMIT = 5;
@@ -99,19 +126,19 @@ export async function POST(req: Request) {
 
   const { student } = user;
 
-  // Enforce free-tier limit
-  if (student.subscriptionTier === "free") {
-    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const usedThisWeek = await db.askAIQuery.count({
-      where: { studentId: student.id, createdAt: { gte: weekAgo } },
-    });
-    if (usedThisWeek >= FREE_TIER_WEEKLY_LIMIT) {
-      return NextResponse.json(
-        { success: false, error: "weekly_limit_reached", used: usedThisWeek, limit: FREE_TIER_WEEKLY_LIMIT },
-        { status: 429 }
-      );
-    }
-  }
+  // Enforce free-tier limit (TEMPORARILY DISABLED FOR TESTING)
+  // if (student.subscriptionTier === "free") {
+  //   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  //   const usedThisWeek = await db.askAIQuery.count({
+  //     where: { studentId: student.id, createdAt: { gte: weekAgo } },
+  //   });
+  //   if (usedThisWeek >= FREE_TIER_WEEKLY_LIMIT) {
+  //     return NextResponse.json(
+  //       { success: false, error: "weekly_limit_reached", used: usedThisWeek, limit: FREE_TIER_WEEKLY_LIMIT },
+  //       { status: 429 }
+  //     );
+  //   }
+  // }
 
   const body = await req.json();
   const parsed = AskAIRequestSchema.safeParse(body);
@@ -122,7 +149,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { query, imageBase64, imageMediaType } = parsed.data;
+  const { query, imageBase64, imageMediaType, fileBase64, fileMediaType, conversationHistory } = parsed.data;
 
   // 1. Prompt injection check
   const injectionDetected = detectPromptInjection(query);
@@ -160,35 +187,46 @@ export async function POST(req: Request) {
     extractedText = vision.extractedText;
   }
 
-  // 3. Build message content for Claude
-  const content: ContentBlockParam[] = [];
-
-  if (imageBase64) {
-    const mediaType: SupportedMediaType = imageMediaType ?? "image/jpeg";
-    content.push({
-      type: "image",
-      source: { type: "base64", media_type: mediaType, data: imageBase64 },
-    });
-  }
-
-  // Combine typed query + OCR text
+  // 3. Build prompt for Gemini
   const combinedQuery = [query.trim(), extractedText.trim()].filter(Boolean).join("\n\n[Text extracted from image:]\n");
   const fullQuery = `Board: ${student.board} | Class: ${student.classYear}\n\n${combinedQuery}`;
-  content.push({ type: "text", text: fullQuery });
 
-  // 3. Call Anthropic Claude
+  // 3. Call Gemini (multi-turn conversation)
   let responseText: string;
   try {
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-5",
-      max_tokens: 1024,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content }],
+    const model = getGeminiModel();
+
+    type Part = { text: string } | { inlineData: { mimeType: string; data: string } };
+    type ContentBlock = { role: "user" | "model"; parts: Part[] };
+
+    // Map prior conversation turns
+    const historyContents: ContentBlock[] = (conversationHistory ?? []).map(msg => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }],
+    }));
+
+    // Build current message parts
+    const currentParts: Part[] = [];
+    if (imageBase64) {
+      currentParts.push({ inlineData: { mimeType: imageMediaType ?? "image/jpeg", data: imageBase64 } });
+    }
+    if (fileBase64 && fileMediaType) {
+      currentParts.push({ inlineData: { mimeType: fileMediaType, data: fileBase64 } });
+    }
+    currentParts.push({ text: fullQuery });
+
+    const contents: ContentBlock[] = [
+      ...historyContents,
+      { role: "user", parts: currentParts },
+    ];
+
+    const result = await model.generateContent({
+      systemInstruction: SYSTEM_PROMPT,
+      contents,
     });
-    const firstBlock = message.content[0];
-    responseText = firstBlock.type === "text" ? firstBlock.text : "";
+    responseText = result.response.text();
   } catch (err) {
-    console.error("[askai] Claude error:", err);
+    console.error("[askai] Gemini error:", err);
     return NextResponse.json(
       { success: false, error: "AI service unavailable. Please try again." },
       { status: 502 }

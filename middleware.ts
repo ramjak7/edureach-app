@@ -20,19 +20,25 @@ const roleHomeMap: Record<UserRole, string> = {
 export default clerkMiddleware(async (auth, request) => {
   const { pathname } = request.nextUrl;
 
+  // For "/" — redirect to role home if signed in, else to sign-in
+  if (pathname === "/") {
+    const { userId, sessionClaims } = await auth();
+    if (!userId) return NextResponse.redirect(new URL("/sign-in", request.url));
+    const role =
+      (sessionClaims?.metadata as { role?: UserRole } | undefined)?.role ??
+      "student";
+    return NextResponse.redirect(new URL(roleHomeMap[role], request.url));
+  }
+
   if (isPublicRoute(request)) return NextResponse.next();
 
   // Protect all non-public routes — redirects to sign-in if unauthenticated
-  const { userId, sessionClaims } = await auth.protect();
+  const { sessionClaims } = await auth.protect();
 
   const role =
     (sessionClaims?.metadata as { role?: UserRole } | undefined)?.role ??
     "student";
 
-  // Send authenticated users on "/" to their role home
-  if (pathname === "/" && userId) {
-    return NextResponse.redirect(new URL(roleHomeMap[role], request.url));
-  }
 
   // Prevent cross-role access (e.g. a student hitting /tutor/*)
   const routeRole = pathname.split("/")[1] as UserRole;

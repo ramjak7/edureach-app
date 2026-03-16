@@ -18,8 +18,8 @@ const CONCEPT_IDS = {
   trigonometry: "cc000005-0000-4000-8000-000000000001",
 };
 
-// 20 stable question IDs (4 per concept)
-const Q = (n: number) => `q0${String(n).padStart(6, "0")}-0000-4000-8000-000000000001`;
+// 20 stable question IDs (4 per concept) — proper v4-compatible UUIDs
+const Q = (n: number) => `a${String(n).padStart(7, "0")}-0000-4000-8000-000000000001`;
 
 async function main() {
   // 1. Chapter

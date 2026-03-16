@@ -11,9 +11,9 @@ export const DiagnosticSubmitSchema = z.object({
   attempts: z
     .array(
       z.object({
-        contentObjectId: z.string().uuid(),
-        conceptId: z.string().uuid(),
-        selectedOptionId: z.string().max(1),
+        contentObjectId: z.string().min(1).max(100),
+        conceptId: z.string().min(1).max(100),
+        selectedOptionId: z.string().max(10),
         timeTakenSeconds: z.number().int().min(0).max(600),
       })
     )

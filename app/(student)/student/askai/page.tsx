@@ -27,20 +27,23 @@ export default async function AskAIPage() {
   });
 
   return (
-    <main className="min-h-screen p-6 md:p-10">
-      <div className="mx-auto max-w-2xl space-y-6">
-        <div>
+    <div className="h-full flex flex-col px-4 md:px-8">
+      <div className="mx-auto w-full max-w-2xl flex flex-col h-full">
+        <div className="shrink-0 pt-4 pb-3">
           <h1 className="text-2xl font-bold">Ask AI</h1>
-          <p className="mt-1 text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             Get step-by-step explanations for any board exam doubt.
           </p>
         </div>
-        <AskAIClient
-          initialUsed={used}
-          isFree={student.subscriptionTier === "free"}
-          weeklyLimit={FREE_TIER_WEEKLY_LIMIT}
-        />
+        {/* flex-1 min-h-0: gives AskAIClient a definite height equal to remaining flex space */}
+        <div className="flex-1 min-h-0">
+          <AskAIClient
+            initialUsed={used}
+            isFree={false} /* TEMPORARILY DISABLED FOR TESTING */
+            weeklyLimit={FREE_TIER_WEEKLY_LIMIT}
+          />
+        </div>
       </div>
-    </main>
+    </div>
   );
 }

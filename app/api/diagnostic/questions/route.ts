@@ -24,26 +24,32 @@ export async function GET() {
 
   const { board, classYear } = user.student;
 
-  const questions = await db.contentObject.findMany({
-    where: {
-      type: "practice_question",
-      productionStatus: "live",
-      board,
-      classYear,
-    },
-    select: {
-      id: true,
-      conceptId: true,
-      difficultyLevel: true,
-      questionText: true,
-      options: true,
-      // correctOptionId intentionally excluded — computed server-side on submit
-      concept: {
-        select: { id: true, name: true },
-      },
-    },
-    orderBy: [{ conceptId: "asc" }, { difficultyLevel: "asc" }],
+  const baseWhere = { type: "practice_question" as const, productionStatus: "live" as const };
+  const orderBy = [{ conceptId: "asc" as const }, { difficultyLevel: "asc" as const }];
+  const select = {
+    id: true,
+    conceptId: true,
+    difficultyLevel: true,
+    questionText: true,
+    options: true,
+    concept: { select: { id: true, name: true } },
+  };
+
+  // Try exact board+class match first; fall back to all live questions (covers
+  // boards not yet seeded — important during testing and early content rollout)
+  let questions = await db.contentObject.findMany({
+    where: { ...baseWhere, board, classYear },
+    select,
+    orderBy,
   });
+
+  if (questions.length === 0) {
+    questions = await db.contentObject.findMany({
+      where: baseWhere,
+      select,
+      orderBy,
+    });
+  }
 
   return NextResponse.json({ success: true, data: questions });
 }

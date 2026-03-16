@@ -1,5 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+
+export function getGeminiModel(modelName = "gemini-3.1-flash-lite-preview") {
+  return genAI.getGenerativeModel({ model: modelName });
+}
