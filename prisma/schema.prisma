@@ -1,0 +1,753 @@
+// This is the single source of truth for the EduReach India database schema.
+// Never edit migration files manually — use `prisma migrate dev`.
+// See Technical_Architecture_v1.md Part A for full field-level documentation.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  student
+  parent
+  tutor
+  admin
+}
+
+enum UserAccountStatus {
+  active
+  suspended
+  under_review
+  removed
+}
+
+enum Board {
+  CBSE
+  ICSE
+  Maharashtra
+  UP_Board
+}
+
+enum SubscriptionTier {
+  free
+  core
+  plus
+  pro
+}
+
+enum TutorType {
+  marketplace
+  platform_hired
+}
+
+enum TutorAccountStatus {
+  applicant
+  onboarding
+  active
+  suspended
+  removed
+}
+
+enum TpsTier {
+  platinum
+  gold
+  silver
+  bronze
+  under_review
+}
+
+enum BackgroundCheckStatus {
+  pending
+  passed
+  failed
+}
+
+enum ContentType {
+  video
+  notes_pdf
+  practice_question
+  mock_test
+}
+
+enum DifficultyLevel {
+  easy
+  medium
+  hard
+  board_authentic
+}
+
+enum ProductionStatus {
+  draft
+  sme_review
+  qc_passed
+  live
+  deprecated
+}
+
+enum MasteryStatus {
+  not_started
+  exploring
+  practiced
+  mastered
+  retained
+}
+
+enum ErrorType {
+  conceptual
+  procedural
+  careless
+  knowledge_gap
+}
+
+enum SessionContext {
+  self_study
+  tutor_session
+  mock_test
+  daily_challenge
+  diagnostic
+}
+
+enum SlotState {
+  available
+  available_now
+  in_session
+  blocked
+  pending
+}
+
+enum BookingType {
+  instant
+  scheduled
+  ai_recommended
+  demo
+}
+
+enum BookingStatus {
+  pending
+  payment_held
+  confirmed
+  in_session
+  completed
+  cancelled_by_student
+  cancelled_by_tutor
+  no_show_student
+  no_show_tutor
+  disputed
+}
+
+enum PaymentStatus {
+  authorized
+  held
+  released
+  refunded
+  dispute_pending
+}
+
+enum SessionVerificationStatus {
+  verified_complete
+  disputed_completion
+  no_show_tutor
+  no_show_student
+}
+
+enum TutorObjectiveAchieved {
+  achieved
+  partially
+  not_achieved
+}
+
+enum SafetyScanStatus {
+  clean
+  flagged_for_review
+  escalated
+}
+
+enum ReviewerType {
+  student
+  parent
+}
+
+enum PaymentType {
+  session
+  subscription
+}
+
+enum PaymentTransactionStatus {
+  authorized
+  captured
+  transferred
+  refunded
+  failed
+}
+
+enum FlaggedEntityType {
+  user
+  session
+  message
+  askai_query
+}
+
+enum FlagType {
+  contact_info_attempt
+  grooming_signal
+  csam_detected
+  conduct_complaint
+  credential_fraud
+  referral_abuse
+  prompt_injection
+}
+
+enum FlagSeverity {
+  level_1
+  level_2
+  level_3
+}
+
+enum FlagDetectedBy {
+  automated_nlp
+  automated_scan
+  user_report
+  ops_review
+}
+
+enum FlagStatus {
+  open
+  under_review
+  resolved_no_action
+  resolved_action_taken
+}
+
+enum FlagRetention {
+  standard_30_days
+  elevated_2_years
+  legal_hold_7_years
+}
+
+enum DisputeType {
+  duration
+  technical
+  quality
+  conduct
+}
+
+enum DisputeStatus {
+  open
+  under_review
+  resolved_refund
+  resolved_no_refund
+  appealed
+}
+
+enum RelationshipToStudent {
+  mother
+  father
+  guardian
+}
+
+enum ReportFrequency {
+  daily
+  weekly
+}
+
+enum AskAIConfidence {
+  HIGH
+  MEDIUM
+  LOW
+  ESCALATED
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  cancelled
+  expired
+}
+
+// ---------------------------------------------------------------------------
+// A.2 USERS DOMAIN
+// ---------------------------------------------------------------------------
+
+model User {
+  id                String            @id @default(uuid())
+  phoneNumber       String            @unique @map("phone_number") @db.VarChar(15)
+  clerkId           String            @unique @map("clerk_id") @db.VarChar(100)
+  role              UserRole
+  createdAt         DateTime          @default(now()) @map("created_at")
+  lastActiveAt      DateTime          @default(now()) @map("last_active_at")
+  accountStatus     UserAccountStatus @default(active) @map("account_status")
+  deviceFingerprint String?           @map("device_fingerprint") @db.VarChar(64)
+  aadhaarVerified   Boolean           @default(false) @map("aadhaar_verified")
+
+  // Relations
+  student       Student?
+  parent        Parent?
+  tutor         Tutor?
+  safetyFlags   SafetyFlag[]   @relation("FlaggedUser")
+  assignedFlags SafetyFlag[]   @relation("AssignedOpsUser")
+  disputes      Dispute[]      @relation("DisputeFiler")
+  resolvedDisp  Dispute[]      @relation("DisputeResolver")
+  reviews       Review[]
+
+  @@map("users")
+}
+
+model Student {
+  id                      String           @id @default(uuid())
+  userId                  String           @unique @map("user_id")
+  displayName             String           @map("display_name") @db.VarChar(100)
+  board                   Board
+  classYear               Int              @map("class_year") @db.SmallInt
+  targetExamScore         Int?             @map("target_exam_score") @db.SmallInt
+  subscriptionTier        SubscriptionTier @default(free) @map("subscription_tier")
+  subscriptionExpiresAt   DateTime?        @map("subscription_expires_at")
+  parentId                String?          @map("parent_id")
+  consentGivenAt          DateTime?        @map("consent_given_at")
+  consentGivenBy          String?          @map("consent_given_by")
+  onboardingCompleted     Boolean          @default(false) @map("onboarding_completed")
+  isMinor                 Boolean          @default(true) @map("is_minor")
+  referralCode            String           @unique @map("referral_code") @db.VarChar(20)
+
+  // Relations
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent           Parent?            @relation(fields: [parentId], references: [id])
+  masteryScores    MasteryScore[]
+  practiceAttempts PracticeAttempt[]
+  askaiQueries     AskAIQuery[]
+  bookings         Booking[]
+  subscriptions    Subscription[]
+  referrals        Referral[]         @relation("ReferrerStudent")
+  referredBy       Referral?          @relation("ReferredStudent")
+
+  @@map("students")
+}
+
+model Parent {
+  id                    String                @id @default(uuid())
+  userId                String                @unique @map("user_id")
+  displayName           String                @map("display_name") @db.VarChar(100)
+  relationshipToStudent RelationshipToStudent @map("relationship_to_student")
+  whatsappOptIn         Boolean               @default(false) @map("whatsapp_opt_in")
+  reportFrequency       ReportFrequency       @default(weekly) @map("report_frequency")
+
+  // Relations
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  children Student[]
+  reviews  Review[]  @relation("ParentReviews")
+
+  @@map("parents")
+}
+
+model Tutor {
+  id                              String             @id @default(uuid())
+  userId                          String             @unique @map("user_id")
+  displayName                     String             @map("display_name") @db.VarChar(150)
+  tutorType                       TutorType          @default(marketplace) @map("tutor_type")
+  accountStatus                   TutorAccountStatus @default(applicant) @map("account_status")
+  tpsScore                        Decimal            @default(0) @map("tps_score") @db.Decimal(5, 2)
+  tpsTier                         TpsTier            @default(bronze) @map("tps_tier")
+  commissionRate                  Decimal            @default(0.20) @map("commission_rate") @db.Decimal(4, 3)
+  newTutorSessionsRemaining       Int                @default(5) @map("new_tutor_sessions_remaining") @db.SmallInt
+  hourlyRateMin                   Int                @map("hourly_rate_min")
+  hourlyRateMax                   Int                @map("hourly_rate_max")
+  bio                             String?            @db.Text
+  subjects                        String[]
+  boards                          Board[]
+  classYears                      Int[]              @map("class_years")
+  introVideoUrl                   String?            @map("intro_video_url") @db.VarChar(512)
+  childSafetyPolicySignedAt       DateTime?          @map("child_safety_policy_signed_at")
+  academyCompletedAt              DateTime?          @map("academy_completed_at")
+  backgroundCheckStatus           BackgroundCheckStatus @default(pending) @map("background_check_status")
+  panNumber                       String?            @map("pan_number") @db.VarChar(10)
+  bankAccountVerified             Boolean            @default(false) @map("bank_account_verified")
+  gstin                           String?            @db.VarChar(15)
+  cumulativeFinancialYearEarnings Int                @default(0) @map("cumulative_financial_year_earnings")
+
+  // Relations
+  user              User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availabilitySlots TutorAvailabilitySlot[]
+  bookings          Booking[]
+  reviews           Review[]
+
+  @@map("tutors")
+}
+
+// ---------------------------------------------------------------------------
+// A.3 CONTENT DOMAIN
+// ---------------------------------------------------------------------------
+
+model Chapter {
+  id        String    @id @default(uuid())
+  name      String    @db.VarChar(200)
+  board     Board
+  classYear Int       @map("class_year") @db.SmallInt
+  subject   String    @db.VarChar(100)
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  concepts Concept[]
+
+  @@map("chapters")
+}
+
+model Concept {
+  id                    String   @id @default(uuid())
+  name                  String   @db.VarChar(200)
+  board                 Board
+  classYear             Int      @map("class_year") @db.SmallInt
+  subject               String   @db.VarChar(100)
+  chapterId             String   @map("chapter_id")
+  prerequisiteConceptIds String[] @map("prerequisite_concept_ids")
+  boardExamWeight       Decimal  @map("board_exam_weight") @db.Decimal(4, 3)
+  difficultyCalibrated  Decimal  @default(0.5) @map("difficulty_calibrated") @db.Decimal(4, 3)
+  createdAt             DateTime @default(now()) @map("created_at")
+  lastUpdatedAt         DateTime @updatedAt @map("last_updated_at")
+
+  // Relations
+  chapter          Chapter           @relation(fields: [chapterId], references: [id])
+  contentObjects   ContentObject[]
+  masteryScores    MasteryScore[]
+  practiceAttempts PracticeAttempt[]
+
+  @@map("concepts")
+}
+
+model ContentObject {
+  id                   String          @id @default(uuid())
+  type                 ContentType
+  conceptId            String          @map("concept_id")
+  board                Board
+  classYear            Int             @map("class_year") @db.SmallInt
+  s3Url                String?         @map("s3_url") @db.VarChar(512)
+  durationSeconds      Int?            @map("duration_seconds")
+  difficultyLevel      DifficultyLevel @map("difficulty_level")
+  productionStatus     ProductionStatus @default(draft) @map("production_status")
+  accuracyLastAuditedAt DateTime?      @map("accuracy_last_audited_at")
+  syllabusVersion      String          @map("syllabus_version") @db.VarChar(20)
+  // Question-specific fields (populated only when type = practice_question)
+  questionText         String?         @map("question_text") @db.Text
+  options              Json?           // [{id: "a"|"b"|"c"|"d", text: string}]
+  correctOptionId      String?         @map("correct_option_id") @db.VarChar(1)
+  explanation          String?         @db.Text
+  createdAt            DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  concept          Concept           @relation(fields: [conceptId], references: [id])
+  practiceAttempts PracticeAttempt[]
+
+  @@map("content_objects")
+}
+
+// ---------------------------------------------------------------------------
+// A.3 LEARNING DOMAIN
+// ---------------------------------------------------------------------------
+
+model MasteryScore {
+  id                            String        @id @default(uuid())
+  studentId                     String        @map("student_id")
+  conceptId                     String        @map("concept_id")
+  score                         Decimal       @db.Decimal(5, 2)
+  accuracyComponent             Decimal       @default(0.5) @map("accuracy_component") @db.Decimal(4, 3)
+  timeEfficiencyComponent       Decimal       @default(0.5) @map("time_efficiency_component") @db.Decimal(4, 3)
+  difficultyProgressionComponent Decimal      @default(0.5) @map("difficulty_progression_component") @db.Decimal(4, 3)
+  spacedRepetitionComponent     Decimal       @default(0.5) @map("spaced_repetition_component") @db.Decimal(4, 3)
+  tutorFeedbackComponent        Decimal       @default(0.5) @map("tutor_feedback_component") @db.Decimal(4, 3)
+  lastPracticeAt                DateTime?     @map("last_practice_at")
+  nextReviewDueAt               DateTime?     @map("next_review_due_at")
+  status                        MasteryStatus @default(not_started)
+  updatedAt                     DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  concept Concept @relation(fields: [conceptId], references: [id])
+
+  // A.7 — one row per student-concept pair
+  @@unique([studentId, conceptId])
+  // A.7 — Reading the full mastery map by student_id
+  @@index([studentId])
+  @@map("mastery_scores")
+}
+
+model PracticeAttempt {
+  id              String         @id @default(uuid())
+  studentId       String         @map("student_id")
+  contentObjectId String         @map("content_object_id")
+  // Denormalised for fast aggregation — A.3
+  conceptId       String         @map("concept_id")
+  isCorrect       Boolean        @map("is_correct")
+  errorType       ErrorType?     @map("error_type")
+  timeTakenSeconds Int           @map("time_taken_seconds")
+  attemptedAt     DateTime       @default(now()) @map("attempted_at")
+  sessionContext  SessionContext @map("session_context")
+
+  // Relations
+  student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  contentObject ContentObject @relation(fields: [contentObjectId], references: [id])
+  concept       Concept       @relation(fields: [conceptId], references: [id])
+
+  // A.7 — Mastery computation + partitioned on attempted_at
+  @@index([studentId])
+  @@index([conceptId])
+  @@index([attemptedAt])
+  @@map("practice_attempts")
+}
+
+model AskAIQuery {
+  id              String          @id @default(uuid())
+  studentId       String          @map("student_id")
+  queryText       String          @map("query_text") @db.Text
+  imageS3Url      String?         @map("image_s3_url") @db.VarChar(512)
+  extractedText   String?         @map("extracted_text") @db.Text
+  responseText    String          @map("response_text") @db.Text
+  confidence      AskAIConfidence
+  board           Board
+  classYear       Int             @map("class_year") @db.SmallInt
+  // Safety pipeline results
+  promptInjection Boolean         @default(false) @map("prompt_injection")
+  imageSafetyPass Boolean?        @map("image_safety_pass")
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@map("askai_queries")
+}
+
+// ---------------------------------------------------------------------------
+// A.4 MARKETPLACE DOMAIN
+// ---------------------------------------------------------------------------
+
+model TutorAvailabilitySlot {
+  id        String    @id @default(uuid())
+  tutorId   String    @map("tutor_id")
+  slotStart DateTime  @map("slot_start")
+  slotEnd   DateTime  @map("slot_end")
+  state     SlotState @default(available)
+  bookingId String?   @unique @map("booking_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  tutor   Tutor    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  // A.7 — Availability queries for matching
+  @@index([tutorId, slotStart, state])
+  @@map("tutor_availability_slots")
+}
+
+model Booking {
+  id                    String        @id @default(uuid())
+  studentId             String        @map("student_id")
+  tutorId               String        @map("tutor_id")
+  slotId                String?       @unique @map("slot_id")
+  bookingType           BookingType   @map("booking_type")
+  status                BookingStatus @default(pending)
+  sessionFocus          String?       @map("session_focus") @db.Text
+  grossFeeInr           Int           @map("gross_fee_inr")
+  // Locked at session completion, not booking time — CLAUDE.md
+  commissionRateAtBooking Decimal?    @map("commission_rate_at_booking") @db.Decimal(4, 3)
+  createdAt             DateTime      @default(now()) @map("created_at")
+  confirmedAt           DateTime?     @map("confirmed_at")
+  razorpayOrderId       String?       @unique @map("razorpay_order_id") @db.VarChar(100)
+  paymentStatus         PaymentStatus @default(authorized) @map("payment_status")
+
+  // Relations
+  student  Student                @relation(fields: [studentId], references: [id])
+  tutor    Tutor                  @relation(fields: [tutorId], references: [id])
+  slot     TutorAvailabilitySlot?
+  session  Session?
+  payment  Payment?               @relation("SessionPayment")
+  disputes Dispute[]
+
+  // A.7
+  @@index([studentId])
+  @@index([tutorId])
+  @@index([status])
+  @@map("bookings")
+}
+
+model Session {
+  id                      String                    @id @default(uuid())
+  bookingId               String                    @unique @map("booking_id")
+  actualStartAt           DateTime?                 @map("actual_start_at")
+  actualEndAt             DateTime?                 @map("actual_end_at")
+  actualDurationMinutes   Int?                      @map("actual_duration_minutes") @db.SmallInt
+  verificationStatus      SessionVerificationStatus @map("verification_status")
+  classroomLivePct        Decimal?                  @map("classroom_live_pct") @db.Decimal(4, 3)
+  bothPresentPct          Decimal?                  @map("both_present_pct") @db.Decimal(4, 3)
+  recordingS3Url          String?                   @map("recording_s3_url") @db.VarChar(512)
+  recordingDurationSeconds Int?                     @map("recording_duration_seconds")
+  tutorPostSessionNotes   String?                   @map("tutor_post_session_notes") @db.Text
+  tutorObjectiveAchieved  TutorObjectiveAchieved?   @map("tutor_objective_achieved")
+  homeworkAssigned        Boolean?                  @map("homework_assigned")
+  safetyScanStatus        SafetyScanStatus          @default(clean) @map("safety_scan_status")
+  safetyScanCompletedAt   DateTime?                 @map("safety_scan_completed_at")
+  createdAt               DateTime                  @default(now()) @map("created_at")
+
+  // Relations
+  booking  Booking    @relation(fields: [bookingId], references: [id])
+  review   Review?
+  disputes Dispute[]
+
+  @@map("sessions")
+}
+
+model Review {
+  id              String       @id @default(uuid())
+  sessionId       String       @unique @map("session_id")
+  reviewerId      String       @map("reviewer_id")
+  reviewerType    ReviewerType @map("reviewer_type")
+  tutorId         String       @map("tutor_id")
+  parentId        String?      @map("parent_id")
+  rating          Int          @db.SmallInt
+  comment         String?      @db.Text
+  // Must be ≥ 2 hours after session end — enforced in application layer
+  submittedAt     DateTime     @default(now()) @map("submitted_at")
+  // False until 7 days post-submission — anti-gaming
+  isVisibleToTutor Boolean     @default(false) @map("is_visible_to_tutor")
+  gamingFlag      Boolean      @default(false) @map("gaming_flag")
+
+  // Relations
+  session  Session @relation(fields: [sessionId], references: [id])
+  reviewer User    @relation(fields: [reviewerId], references: [id])
+  tutor    Tutor   @relation(fields: [tutorId], references: [id])
+  parent   Parent? @relation("ParentReviews", fields: [parentId], references: [id])
+
+  // A.7 — TPS computation; anti-gaming queries
+  @@index([tutorId])
+  @@index([submittedAt])
+  @@index([gamingFlag])
+  @@map("reviews")
+}
+
+model Payment {
+  id                 String                   @id @default(uuid())
+  bookingId          String?                  @unique @map("booking_id")
+  subscriptionId     String?                  @map("subscription_id")
+  paymentType        PaymentType              @map("payment_type")
+  grossAmountInr     Int                      @map("gross_amount_inr")
+  commissionAmountInr Int                     @map("commission_amount_inr")
+  tdsAmountInr       Int                      @default(0) @map("tds_amount_inr")
+  netTutorAmountInr  Int                      @map("net_tutor_amount_inr")
+  razorpayPaymentId  String?                  @map("razorpay_payment_id") @db.VarChar(100)
+  razorpayTransferId String?                  @map("razorpay_transfer_id") @db.VarChar(100)
+  status             PaymentTransactionStatus @default(authorized)
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  transferredAt      DateTime?                @map("transferred_at")
+  // e.g. "2025-26" — for TDS annual tracking
+  financialYear      String                   @map("financial_year") @db.VarChar(7)
+
+  // Relations
+  booking      Booking?      @relation("SessionPayment", fields: [bookingId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  // A.7 — Payout batch; TDS reporting
+  @@index([bookingId])
+  @@index([status])
+  @@index([financialYear])
+  @@index([transferredAt])
+  @@map("payments")
+}
+
+model Subscription {
+  id                String             @id @default(uuid())
+  studentId         String             @map("student_id")
+  tier              SubscriptionTier
+  status            SubscriptionStatus @default(active)
+  razorpaySubId     String?            @unique @map("razorpay_sub_id") @db.VarChar(100)
+  currentPeriodStart DateTime          @map("current_period_start")
+  currentPeriodEnd  DateTime           @map("current_period_end")
+  cancelledAt       DateTime?          @map("cancelled_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+
+  student  Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([studentId])
+  @@map("subscriptions")
+}
+
+// ---------------------------------------------------------------------------
+// A.5 TRUST & SAFETY DOMAIN
+// ---------------------------------------------------------------------------
+
+model SafetyFlag {
+  id               String         @id @default(uuid())
+  // Polymorphic — points to users.id or sessions.id depending on type
+  flaggedEntityId  String         @map("flagged_entity_id")
+  flaggedEntityType FlaggedEntityType @map("flagged_entity_type")
+  flagType         FlagType       @map("flag_type")
+  severity         FlagSeverity
+  detectedBy       FlagDetectedBy @map("detected_by")
+  status           FlagStatus     @default(open)
+  assignedTo       String?        @map("assigned_to")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  resolvedAt       DateTime?      @map("resolved_at")
+  resolutionNotes  String?        @map("resolution_notes") @db.Text
+  // CLAUDE.md — safety flags retained for 7 years minimum on legal hold
+  retentionFlag    FlagRetention  @default(standard_30_days) @map("retention_flag")
+
+  // Relations (user on the polymorphic side; sessions reference is via flaggedEntityId)
+  flaggedUser  User? @relation("FlaggedUser", fields: [flaggedEntityId], references: [id], map: "safety_flags_flagged_user_fkey")
+  assignedUser User? @relation("AssignedOpsUser", fields: [assignedTo], references: [id])
+
+  // A.7 — Dashboard; real-time alert queries
+  @@index([flaggedEntityId])
+  @@index([status])
+  @@index([severity])
+  @@map("safety_flags")
+}
+
+model Dispute {
+  id              String        @id @default(uuid())
+  sessionId       String        @map("session_id")
+  bookingId       String        @map("booking_id")
+  filedBy         String        @map("filed_by")
+  disputeType     DisputeType   @map("dispute_type")
+  description     String?       @db.Text
+  status          DisputeStatus @default(open)
+  refundAmountInr Int           @default(0) @map("refund_amount_inr")
+  resolutionNotes String?       @map("resolution_notes") @db.Text
+  createdAt       DateTime      @default(now()) @map("created_at")
+  resolvedAt      DateTime?     @map("resolved_at")
+  resolvedBy      String?       @map("resolved_by")
+  appealFiledAt   DateTime?     @map("appeal_filed_at")
+  appealResolvedAt DateTime?    @map("appeal_resolved_at")
+
+  // Relations
+  session  Session @relation(fields: [sessionId], references: [id])
+  booking  Booking @relation(fields: [bookingId], references: [id])
+  filer    User    @relation("DisputeFiler", fields: [filedBy], references: [id])
+  resolver User?   @relation("DisputeResolver", fields: [resolvedBy], references: [id])
+
+  @@map("disputes")
+}
+
+// ---------------------------------------------------------------------------
+// REFERRAL TABLE (Sprint 14)
+// ---------------------------------------------------------------------------
+
+model Referral {
+  id             String   @id @default(uuid())
+  referrerId     String   @map("referrer_id")
+  referredId     String   @unique @map("referred_id")
+  creditIssued   Boolean  @default(false) @map("credit_issued")
+  fraudSuspected Boolean  @default(false) @map("fraud_suspected")
+  qualifiedAt    DateTime? @map("qualified_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  referrer Student @relation("ReferrerStudent", fields: [referrerId], references: [id])
+  referred Student @relation("ReferredStudent", fields: [referredId], references: [id])
+
+  @@index([referrerId])
+  @@map("referrals")
+}
