@@ -21,6 +21,25 @@ const CONCEPT_IDS = {
 // 20 stable question IDs (4 per concept) — proper v4-compatible UUIDs
 const Q = (n: number) => `a${String(n).padStart(7, "0")}-0000-4000-8000-000000000001`;
 
+// Stable tutor user/tutor IDs (use hex digits only for valid UUIDs)
+const TUTOR_USER_IDS = {
+  priya: "a0000001-0000-4000-8000-000000000001",
+  rahul: "a0000002-0000-4000-8000-000000000001",
+  sneha: "a0000003-0000-4000-8000-000000000001",
+  amit: "a0000004-0000-4000-8000-000000000001",
+  kavita: "a0000005-0000-4000-8000-000000000001",
+  vikram: "a0000006-0000-4000-8000-000000000001",
+};
+
+const TUTOR_IDS = {
+  priya: "b0000001-0000-4000-8000-000000000001",
+  rahul: "b0000002-0000-4000-8000-000000000001",
+  sneha: "b0000003-0000-4000-8000-000000000001",
+  amit: "b0000004-0000-4000-8000-000000000001",
+  kavita: "b0000005-0000-4000-8000-000000000001",
+  vikram: "b0000006-0000-4000-8000-000000000001",
+};
+
 async function main() {
   // 1. Chapter
   await db.chapter.upsert({
@@ -433,6 +452,217 @@ async function main() {
   console.log(
     `✅  Seeded: 1 chapter, ${concepts.length} concepts, ${questions.length} questions`
   );
+
+  // 4. Tutor Users & Tutors
+  const tutorData: Array<{
+    userId: string;
+    tutorId: string;
+    email: string;
+    phone: string;
+    clerkId: string;
+    displayName: string;
+    tpsTier: "platinum" | "gold" | "silver" | "bronze" | "under_review";
+    tpsScore: number;
+    hourlyRateMin: number;
+    hourlyRateMax: number;
+    subjects: string[];
+    boards: ("CBSE" | "ICSE" | "Maharashtra" | "UP_Board")[];
+    classYears: number[];
+    bio: string;
+  }> = [
+    {
+      userId: TUTOR_USER_IDS.priya,
+      tutorId: TUTOR_IDS.priya,
+      email: "priya.sharma@example.com",
+      phone: "+919876543001",
+      clerkId: "seed_tutor_priya",
+      displayName: "Priya Sharma",
+      tpsTier: "platinum",
+      tpsScore: 92.5,
+      hourlyRateMin: 800,
+      hourlyRateMax: 1200,
+      subjects: ["Mathematics", "Physics"],
+      boards: ["CBSE", "ICSE"],
+      classYears: [9, 10, 11, 12],
+      bio: "IIT Delhi graduate with 8+ years of teaching experience. Specialized in board exam preparation and competitive exams (JEE Main/Advanced). I believe in building strong fundamentals and making complex concepts simple. My students have consistently scored 95%+ in board exams.\n\nTeaching Philosophy:\n• Focus on conceptual clarity over rote learning\n• Regular practice tests and doubt resolution\n• Personalized attention to each student's learning pace",
+    },
+    {
+      userId: TUTOR_USER_IDS.rahul,
+      tutorId: TUTOR_IDS.rahul,
+      email: "rahul.verma@example.com",
+      phone: "+919876543002",
+      clerkId: "seed_tutor_rahul",
+      displayName: "Rahul Verma",
+      tpsTier: "gold",
+      tpsScore: 85.3,
+      hourlyRateMin: 500,
+      hourlyRateMax: 800,
+      subjects: ["Chemistry", "Biology"],
+      boards: ["CBSE", "Maharashtra"],
+      classYears: [10, 11, 12],
+      bio: "MSc Chemistry from Mumbai University. 5 years of experience teaching CBSE and Maharashtra board students. Expert in organic chemistry and NEET preparation.\n\nI use visual diagrams, molecular models, and real-world examples to make chemistry come alive. Biology taught with medical entrance exam focus.",
+    },
+    {
+      userId: TUTOR_USER_IDS.sneha,
+      tutorId: TUTOR_IDS.sneha,
+      email: "sneha.gupta@example.com",
+      phone: "+919876543003",
+      clerkId: "seed_tutor_sneha",
+      displayName: "Sneha Gupta",
+      tpsTier: "gold",
+      tpsScore: 81.7,
+      hourlyRateMin: 400,
+      hourlyRateMax: 600,
+      subjects: ["English", "Hindi", "Social Science"],
+      boards: ["CBSE", "UP_Board"],
+      classYears: [6, 7, 8, 9, 10],
+      bio: "MA English Literature with B.Ed. 6 years teaching in reputed CBSE schools. Passionate about language learning and creative writing.\n\nSpecialties:\n• Grammar and composition\n• Literature analysis\n• Essay and letter writing\n• Speaking and comprehension skills",
+    },
+    {
+      userId: TUTOR_USER_IDS.amit,
+      tutorId: TUTOR_IDS.amit,
+      email: "amit.singh@example.com",
+      phone: "+919876543004",
+      clerkId: "seed_tutor_amit",
+      displayName: "Amit Singh",
+      tpsTier: "silver",
+      tpsScore: 72.4,
+      hourlyRateMin: 350,
+      hourlyRateMax: 500,
+      subjects: ["Mathematics", "Computer Science"],
+      boards: ["CBSE"],
+      classYears: [8, 9, 10, 11, 12],
+      bio: "B.Tech Computer Science, 3 years tutoring experience. I make mathematics and programming fun and accessible.\n\nStrong focus on:\n• Python and C++ programming\n• Data structures basics\n• Logical reasoning\n• Board exam mathematics",
+    },
+    {
+      userId: TUTOR_USER_IDS.kavita,
+      tutorId: TUTOR_IDS.kavita,
+      email: "kavita.reddy@example.com",
+      phone: "+919876543005",
+      clerkId: "seed_tutor_kavita",
+      displayName: "Kavita Reddy",
+      tpsTier: "silver",
+      tpsScore: 68.9,
+      hourlyRateMin: 300,
+      hourlyRateMax: 450,
+      subjects: ["Physics", "Mathematics"],
+      boards: ["CBSE", "ICSE", "Maharashtra"],
+      classYears: [6, 7, 8, 9],
+      bio: "BSc Physics with 4 years of home tutoring experience. Specialized in building strong foundations for middle school students preparing for high school.\n\nI focus on:\n• Clear explanations of basic concepts\n• Lots of practice problems\n• Building confidence in STEM subjects",
+    },
+    {
+      userId: TUTOR_USER_IDS.vikram,
+      tutorId: TUTOR_IDS.vikram,
+      email: "vikram.joshi@example.com",
+      phone: "+919876543006",
+      clerkId: "seed_tutor_vikram",
+      displayName: "Vikram Joshi",
+      tpsTier: "bronze",
+      tpsScore: 55.2,
+      hourlyRateMin: 250,
+      hourlyRateMax: 350,
+      subjects: ["Accountancy", "Economics", "Business Studies"],
+      boards: ["CBSE"],
+      classYears: [11, 12],
+      bio: "B.Com with CA Intermediate. New to online tutoring but experienced in commerce subjects. I help students understand practical applications of accounting and economics.\n\nIdeal for students who find commerce subjects challenging or need last-minute exam preparation.",
+    },
+  ];
+
+  for (const t of tutorData) {
+    // Create User for Tutor
+    await db.user.upsert({
+      where: { id: t.userId },
+      update: {},
+      create: {
+        id: t.userId,
+        email: t.email,
+        phoneNumber: t.phone,
+        clerkId: t.clerkId,
+        role: "tutor",
+        accountStatus: "active",
+      },
+    });
+
+    // Create Tutor
+    await db.tutor.upsert({
+      where: { id: t.tutorId },
+      update: {},
+      create: {
+        id: t.tutorId,
+        userId: t.userId,
+        displayName: t.displayName,
+        tutorType: "marketplace",
+        accountStatus: "active",
+        tpsScore: t.tpsScore,
+        tpsTier: t.tpsTier,
+        hourlyRateMin: t.hourlyRateMin,
+        hourlyRateMax: t.hourlyRateMax,
+        subjects: t.subjects,
+        boards: t.boards,
+        classYears: t.classYears,
+        bio: t.bio,
+        backgroundCheckStatus: "passed",
+      },
+    });
+  }
+
+  console.log(`✅  Seeded: ${tutorData.length} tutors`);
+
+  // 5. Generate availability slots for each tutor (next 14 days)
+  // Slot IDs use stable format with hex digits only for valid UUIDs
+  const SLOT_BASE = "d0000000-0000-4000-8000-";
+  let slotCount = 0;
+
+  const tutorIds = Object.values(TUTOR_IDS);
+  for (let tutorIdx = 0; tutorIdx < tutorIds.length; tutorIdx++) {
+    const tutorId = tutorIds[tutorIdx];
+    
+    // Each tutor gets slots on different days to simulate variety
+    // Days offset: tutor 0 gets days 0,2,4,6..., tutor 1 gets days 1,3,5,7...
+    const startOffset = tutorIdx % 2;
+    
+    for (let dayOffset = startOffset; dayOffset < 14; dayOffset += 2) {
+      const date = new Date();
+      date.setHours(0, 0, 0, 0);
+      date.setDate(date.getDate() + dayOffset);
+      
+      // Generate 3-5 slots per day (starting at different times)
+      const baseHour = 9 + (tutorIdx % 4) * 2; // 9, 11, 13, 15 depending on tutor
+      const numSlots = 3 + (tutorIdx % 3); // 3-5 slots
+      
+      for (let slotIdx = 0; slotIdx < numSlots; slotIdx++) {
+        const slotHour = baseHour + slotIdx * 2; // 2 hour gaps
+        if (slotHour >= 20) continue; // Don't go past 8 PM
+        
+        const slotStart = new Date(date);
+        slotStart.setHours(slotHour, 0, 0, 0);
+        
+        const slotEnd = new Date(slotStart);
+        slotEnd.setMinutes(30); // 30-minute slots
+        
+        // Skip if slot is in the past
+        if (slotStart <= new Date()) continue;
+        
+        // Generate valid UUID: d0000000-0000-4000-8000-00TTDDSS0000 (TT=tutor, DD=day, SS=slot, 12 chars total)
+        const slotId = `d0000000-0000-4000-8000-00${String(tutorIdx).padStart(2, '0')}${String(dayOffset).padStart(2, '0')}${String(slotIdx).padStart(2, '0')}0000`;
+        
+        await db.tutorAvailabilitySlot.upsert({
+          where: { id: slotId },
+          update: {},
+          create: {
+            id: slotId,
+            tutorId,
+            slotStart,
+            slotEnd,
+            state: "available",
+          },
+        });
+        slotCount++;
+      }
+    }
+  }
+
+  console.log(`✅  Seeded: ${slotCount} availability slots`);
 }
 
 main()
