@@ -132,6 +132,17 @@ Read through the PRD Sections 1–6 and the User Journey Maps. Understand Aryan'
 
 **Sprint 4 done when:** You can book a session with a test tutor account, pay via Razorpay test mode, and the tutor can accept.
 
+*Razorpay Testing*
+Razorpay's official test credentials:
+Card Number	        Type	    Result
+4012 8888 8888 1881	Visa Credit	✅ Success
+5267 3181 8797 5449	Mastercard	✅ Success
+5104 0600 0000 0008	Mastercard	✅ Success
+
+UPI test: -In the Razorpay checkout, switch to UPI tab and enter:
+success@razorpay → simulates successful payment
+failure@razorpay → simulates failed payment
+
 ---
 
 ## Phase 1: Core Product (Weeks 6–18)

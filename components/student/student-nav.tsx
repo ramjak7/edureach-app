@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useClerk } from "@clerk/nextjs";
-import { BookOpen, MessageCircleQuestion, Users, LogOut } from "lucide-react";
+import { BookOpen, MessageCircleQuestion, Users, CalendarCheck, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/student/dashboard", label: "Dashboard", icon: BookOpen },
   { href: "/student/askai",     label: "Ask AI",    icon: MessageCircleQuestion },
   { href: "/student/tutors",    label: "Tutors",    icon: Users },
+  { href: "/student/bookings",  label: "Bookings",  icon: CalendarCheck },
 ];
 
 export function StudentNav() {
