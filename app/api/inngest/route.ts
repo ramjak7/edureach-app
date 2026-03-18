@@ -1,8 +1,8 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/inngest/client";
+import { createClassroom } from "@/inngest/functions/create-classroom";
 
-// Expose Inngest functions — import and add to the array as functions are built
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [],
+  functions: [createClassroom],
 });

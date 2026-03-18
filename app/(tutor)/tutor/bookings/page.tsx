@@ -20,6 +20,7 @@ export default async function TutorBookingsPage() {
     include: {
       student: { select: { id: true, displayName: true } },
       slot: { select: { slotStart: true, slotEnd: true } },
+      session: { select: { id: true, hmsRoomId: true } },
     },
     orderBy: [
       { status: "asc" }, // pending first
@@ -38,6 +39,9 @@ export default async function TutorBookingsPage() {
           sessionFocus: b.sessionFocus,
           createdAt: b.createdAt.toISOString(),
           confirmedAt: b.confirmedAt?.toISOString() || null,
+          session: b.session
+            ? { id: b.session.id, hmsRoomId: b.session.hmsRoomId }
+            : null,
           student: {
             id: b.student.id,
             displayName: b.student.displayName,

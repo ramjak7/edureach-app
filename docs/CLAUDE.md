@@ -296,8 +296,8 @@ When you need context beyond this file, reference:
 **Update this section at the start of every session.**
 
 ```
-Sprint: Sprint 4 — Booking Flow (complete)
-Goal: End-to-end booking: slot selection → Razorpay payment → tutor accept/decline
+Sprint: Sprint 5 — Virtual Classroom (complete)
+Goal: 100ms-powered video classroom for confirmed bookings
 
 Last completed:
 - Sprint 1: Student onboarding (registration, 20-question diagnostic, mastery heatmap)
@@ -305,6 +305,19 @@ Last completed:
 - Sprint 3: Tutor profiles & discovery (/student/tutors, filters, individual profile page)
 - Sprint 4: Full booking flow — slot picker, subject selector, Razorpay create-order/verify/webhook,
             /student/bookings, /tutor/bookings, BookingsManager (Accept/Decline), subject badge in tutor view
+- Sprint 5: Virtual classroom — 100ms room creation via Inngest at T-5min, token API, shared Classroom
+            component (hms-video-store), /student/classroom/[sessionId], /tutor/classroom/[sessionId],
+            "Join Session" button on both booking pages when hmsRoomId is set
+
+Sprint 5 notes (100ms):
+  SDK choice: @100mslive/server-sdk (server-side) + @100mslive/hms-video-store (client, vanilla JS).
+  roomkit-react was tried and rejected — incompatible with React 19.
+  Role mapping: tutor → "host", student → "guest" (must match 100ms dashboard template role names exactly).
+  Required env vars: HMS_ACCESS_KEY + HMS_SECRET (from 100ms dashboard → Developer → Keys).
+  Inngest fires "booking/confirmed" event on tutor accept → createClassroom function sleeps until T-5min,
+  then creates 100ms room and upserts Session record with hmsRoomId.
+  Required Inngest env vars in Vercel: INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY.
+  SessionVerificationStatus enum has "pending" as initial state (added via migration).
 
 Auth deviation (important):
   Phone/OTP sign-in was deferred during Sprint 1 due to Clerk phone config issues (Indian carrier
@@ -330,7 +343,16 @@ Deployment:
   → Clerk webhook: set endpoint to https://edureach-app.vercel.app/api/auth/webhook in Clerk dashboard.
   → Clerk email verification: use OTP code (not magic link) — magic links are device-bound and break
     cross-device testing (e.g. sign in on PC, click link on phone → "invalid for this device" error).
-  → /api/dev/* routes return 403 on Vercel (NODE_ENV=production) — no security risk.
+  → /api/dev/* routes return 403 on Vercel when ENABLE_DEV_TOOLS is not set — no security risk.
+
+Clerk session token customization (PERMANENT — do not remove):
+  In Clerk dashboard → Configure → Sessions → Customize session token, the following is set:
+    { "metadata": "{{user.public_metadata}}" }
+  This embeds publicMetadata (including the user's role) into every JWT Clerk issues.
+  The middleware reads role from sessionClaims.metadata.role for ALL role-based routing.
+  Without this, sessionClaims.metadata is always undefined and every user defaults to "student",
+  breaking tutor/parent/admin routing entirely. This must also be set on the production Clerk
+  instance when created.
 
 In progress: —
 Blocked by: —

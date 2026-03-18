@@ -153,6 +153,7 @@ enum PaymentStatus {
 }
 
 enum SessionVerificationStatus {
+  pending
   verified_complete
   disputed_completion
   no_show_tutor
@@ -579,6 +580,7 @@ model Booking {
 model Session {
   id                      String                    @id @default(uuid())
   bookingId               String                    @unique @map("booking_id")
+  hmsRoomId               String?                   @map("hms_room_id") @db.VarChar(64)
   actualStartAt           DateTime?                 @map("actual_start_at")
   actualEndAt             DateTime?                 @map("actual_end_at")
   actualDurationMinutes   Int?                      @map("actual_duration_minutes") @db.SmallInt

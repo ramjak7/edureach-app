@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { inngest } from "@/inngest/client";
 
 const actionSchema = z.object({
   action: z.enum(["confirm", "decline"]),
@@ -90,6 +91,21 @@ export async function PATCH(req: Request, { params }: RouteContext) {
           });
         }
       });
+
+      // Fire Inngest event to schedule classroom creation at T-5 min
+      const slot = await db.tutorAvailabilitySlot.findUnique({
+        where: { id: booking.slotId! },
+        select: { slotStart: true },
+      });
+      if (slot) {
+        await inngest.send({
+          name: "booking/confirmed",
+          data: {
+            bookingId,
+            slotStart: slot.slotStart.toISOString(),
+          },
+        });
+      }
 
       return NextResponse.json({ success: true, status: "confirmed" });
     } else {

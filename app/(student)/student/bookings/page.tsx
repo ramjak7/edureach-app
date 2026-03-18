@@ -39,6 +39,7 @@ export default async function StudentBookingsPage() {
     include: {
       tutor: { select: { displayName: true, subjects: true } },
       slot: { select: { slotStart: true, slotEnd: true } },
+      session: { select: { id: true, hmsRoomId: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -96,6 +97,15 @@ export default async function StudentBookingsPage() {
               <span className="text-muted-foreground">Focus: </span>
               {booking.sessionFocus}
             </p>
+          )}
+
+          {booking.status === "confirmed" && booking.session?.hmsRoomId && (
+            <Link
+              href={`/student/classroom/${booking.session.id}`}
+              className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors"
+            >
+              Join Session
+            </Link>
           )}
         </CardContent>
       </Card>

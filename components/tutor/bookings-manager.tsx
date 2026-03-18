@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,7 @@ interface BookingData {
   sessionFocus: string | null;
   createdAt: string;
   confirmedAt: string | null;
+  session: { id: string; hmsRoomId: string | null } | null;
   student: {
     id: string;
     displayName: string;
@@ -174,6 +176,16 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                   </div>
                 );
               })()}
+
+              {/* Join Session button — visible when classroom is ready */}
+              {booking.status === "confirmed" && booking.session?.hmsRoomId && (
+                <Link
+                  href={`/tutor/classroom/${booking.session.id}`}
+                  className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 rounded-md transition-colors mt-2"
+                >
+                  Join Session
+                </Link>
+              )}
             </div>
 
             {/* Actions */}
