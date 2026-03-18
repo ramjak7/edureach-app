@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { db } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, IndianRupee } from "lucide-react";
 
@@ -111,7 +112,7 @@ export default async function StudentBookingsPage() {
             <CardContent className="py-12 text-center text-muted-foreground">
               <p>No bookings yet.</p>
               <p className="text-sm mt-1">
-                Head to <a href="/student/tutors" className="underline">Find a Tutor</a> to book your first session.
+                Head to <Link href="/student/tutors" className="underline">Find a Tutor</Link> to book your first session.
               </p>
             </CardContent>
           </Card>
