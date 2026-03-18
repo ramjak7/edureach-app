@@ -296,11 +296,44 @@ When you need context beyond this file, reference:
 **Update this section at the start of every session.**
 
 ```
-Sprint: Setup Week (Days 2–4 complete)
-Goal: Working scaffold + schema + auth ready for Sprint 1 feature build
+Sprint: Sprint 4 — Booking Flow (complete)
+Goal: End-to-end booking: slot selection → Razorpay payment → tutor accept/decline
+
+Last completed:
+- Sprint 1: Student onboarding (registration, 20-question diagnostic, mastery heatmap)
+- Sprint 2: AskAI core (Claude API, 5-question free limit, photo OCR stub)
+- Sprint 3: Tutor profiles & discovery (/student/tutors, filters, individual profile page)
+- Sprint 4: Full booking flow — slot picker, subject selector, Razorpay create-order/verify/webhook,
+            /student/bookings, /tutor/bookings, BookingsManager (Accept/Decline), subject badge in tutor view
+
+Auth deviation (important):
+  Phone/OTP sign-in was deferred during Sprint 1 due to Clerk phone config issues (Indian carrier
+  SMS setup not completed). Clerk is currently configured with EMAIL as the primary identifier.
+  All auth (sign-up, sign-in) works via email + password. Phone/OTP will be restored in a later
+  sprint when Clerk phone settings and SMS delivery are configured properly.
+  → The PRD and Execution Roadmap still describe phone OTP as the target — that is still the plan.
+  → Do NOT build any feature assuming email is the permanent auth method.
+
+Dev tooling added (Sprint 4):
+  /dev page + /api/dev/make-tutor + /api/dev/make-student
+  → Promote any signed-in Clerk account to tutor or student.
+  → Guarded by env var: ENABLE_DEV_TOOLS=true (server) + NEXT_PUBLIC_ENABLE_DEV_TOOLS=true (client page).
+  → Works on both localhost AND Vercel when those vars are set.
+  → Remove these env vars (or set to false) before real user launch.
+  → /dev page shows a safe message when the var is not set — no security risk if accidentally visited.
+
+Deployment:
+  Vercel production URL: https://edureach-app.vercel.app
+  → App is deployed on Vercel (connected to GitHub main branch, auto-deploys on push).
+  → All env vars from .env.local must also be set in Vercel → Settings → Environment Variables.
+  → Clerk: add edureach-app.vercel.app to allowed origins/redirect URLs in Clerk dashboard → Domains.
+  → Clerk webhook: set endpoint to https://edureach-app.vercel.app/api/auth/webhook in Clerk dashboard.
+  → Clerk email verification: use OTP code (not magic link) — magic links are device-bound and break
+    cross-device testing (e.g. sign in on PC, click link on phone → "invalid for this device" error).
+  → /api/dev/* routes return 403 on Vercel (NODE_ENV=production) — no security risk.
+
 In progress: —
-Blocked by: DATABASE_URL + DIRECT_URL + Clerk keys need to be pasted into .env.local; then run: npx prisma migrate dev --name init
-Last completed: Day 4 — Clerk auth (ClerkProvider, middleware role-guard, /api/auth/webhook, syncClerkUser, sign-in/sign-up pages, 4 role dashboard stubs). Build ✔ all routes dynamic.
+Blocked by: —
 ```
 
 ### Setup Week file map (for next agent session)
