@@ -178,6 +178,7 @@ export function TutorProfileClient({ tutor }: { tutor: TutorProfileData }) {
           tutorId={tutor.id}
           tutorName={tutor.displayName}
           hourlyRate={tutor.hourlyRateMin}
+          tutorSubjects={tutor.subjects}
         />
       </div>
 

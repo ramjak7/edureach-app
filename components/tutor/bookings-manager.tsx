@@ -153,13 +153,27 @@ export function BookingsManager({ initialBookings }: BookingsManagerProps) {
                 </div>
               </div>
 
-              {/* Session Focus */}
-              {booking.sessionFocus && (
-                <p className="text-sm bg-muted/50 rounded px-2 py-1 mt-2">
-                  <span className="text-muted-foreground">Focus: </span>
-                  {booking.sessionFocus}
-                </p>
-              )}
+              {/* Subject & Session Focus */}
+              {booking.sessionFocus && (() => {
+                const colonIdx = booking.sessionFocus!.indexOf(": ");
+                const subject = colonIdx !== -1 ? booking.sessionFocus!.slice(0, colonIdx) : booking.sessionFocus!;
+                const note = colonIdx !== -1 ? booking.sessionFocus!.slice(colonIdx + 2) : null;
+                return (
+                  <div className="mt-2 space-y-1">
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant="secondary" className="text-xs font-medium">
+                        {subject}
+                      </Badge>
+                    </div>
+                    {note && (
+                      <p className="text-sm text-muted-foreground bg-muted/50 rounded px-2 py-1">
+                        <span className="font-medium text-foreground">Focus: </span>
+                        {note}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Actions */}

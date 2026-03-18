@@ -44,6 +44,7 @@ interface SlotPickerProps {
   tutorId: string;
   tutorName: string;
   hourlyRate: number;
+  tutorSubjects: string[];
   onBookingComplete?: () => void;
 }
 
@@ -71,10 +72,12 @@ function loadRazorpayScript(): Promise<boolean> {
   });
 }
 
-export function SlotPicker({ tutorId, tutorName, hourlyRate, onBookingComplete }: SlotPickerProps) {
+export function SlotPicker({ tutorId, tutorName, hourlyRate, tutorSubjects, onBookingComplete }: SlotPickerProps) {
   const [slots, setSlots] = useState<SlotData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<SlotData | null>(null);
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [focusNote, setFocusNote] = useState<string>("");
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dayOffset, setDayOffset] = useState(0);
@@ -126,15 +129,20 @@ export function SlotPicker({ tutorId, tutorName, hourlyRate, onBookingComplete }
 
   const handleBookSlot = useCallback(async () => {
     if (!selectedSlot) return;
+    if (!selectedSubject) { setError("Please select a subject."); return; }
     setBooking(true);
     setError(null);
+
+    const sessionFocus = focusNote.trim()
+      ? `${selectedSubject}: ${focusNote.trim()}`
+      : selectedSubject;
 
     try {
       // Step 1: Create booking (status: pending)
       const bookingRes = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tutorId, slotId: selectedSlot.id }),
+        body: JSON.stringify({ tutorId, slotId: selectedSlot.id, sessionFocus }),
       });
       const bookingData = await bookingRes.json();
       if (!bookingData.success) {
@@ -192,6 +200,8 @@ export function SlotPicker({ tutorId, tutorName, hourlyRate, onBookingComplete }
             if (verifyData.success) {
               setSlots((prev) => prev.filter((s) => s.id !== capturedSlot.id));
               setSelectedSlot(null);
+              setSelectedSubject("");
+              setFocusNote("");
               onBookingComplete?.();
               alert(
                 `Payment successful! Session booked on ${formatDate(new Date(capturedSlot.slotStart))} at ${formatTime(capturedSlot.slotStart)}.\nWaiting for ${tutorName} to confirm.`
@@ -218,7 +228,7 @@ export function SlotPicker({ tutorId, tutorName, hourlyRate, onBookingComplete }
       setError("Network error. Please try again.");
       setBooking(false);
     }
-  }, [selectedSlot, tutorId, tutorName, onBookingComplete]);
+  }, [selectedSlot, selectedSubject, focusNote, tutorId, tutorName, onBookingComplete]);
 
   if (loading) {
     return (
@@ -319,7 +329,7 @@ export function SlotPicker({ tutorId, tutorName, hourlyRate, onBookingComplete }
           )}
         </div>
 
-        {/* Selected Slot Summary */}
+        {/* Selected Slot Summary + Subject */}
         {selectedSlot && (
           <div className="border-t pt-4 space-y-3">
             <div className="bg-muted/50 rounded-lg p-3">
@@ -333,6 +343,32 @@ export function SlotPicker({ tutorId, tutorName, hourlyRate, onBookingComplete }
               <p className="text-sm mt-1">
                 <span className="font-medium">Fee:</span> ₹{Math.round(hourlyRate / 2)}
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject <span className="text-red-500">*</span></label>
+              <select
+                value={selectedSubject}
+                onChange={(e) => setSelectedSubject(e.target.value)}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select a subject...</option>
+                {tutorSubjects.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">What would you like to focus on? <span className="text-muted-foreground">(optional)</span></label>
+              <textarea
+                value={focusNote}
+                onChange={(e) => setFocusNote(e.target.value)}
+                placeholder="e.g. Quadratic equations, Chapter 5 doubts..."
+                maxLength={300}
+                rows={2}
+                className="w-full rounded-md border bg-background px-3 py-2 text-sm resize-none"
+              />
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}
