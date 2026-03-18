@@ -46,7 +46,7 @@ function DevTools() {
       </div>
       <p className="text-muted-foreground text-sm">
         Use these buttons to promote the currently signed-in Clerk account to a specific role.
-        This lets you test both student and tutor flows without waiting for Sprint 8 onboarding.
+        After clicking, <strong>sign out and sign back in</strong> so Clerk issues a new session token with the updated role — then navigate to the relevant page.
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

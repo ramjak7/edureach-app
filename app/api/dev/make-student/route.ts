@@ -4,7 +4,7 @@
  * Remove or secure before production.
  */
 import { NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 
 export async function POST() {
@@ -44,12 +44,18 @@ export async function POST() {
     },
   });
 
+  // Update Clerk publicMetadata so middleware sees the correct role immediately
+  const client = await clerkClient();
+  await client.users.updateUser(clerkId, {
+    publicMetadata: { role: "student" },
+  });
+
   // Check if student already exists
   const existing = await db.student.findUnique({ where: { userId: user.id } });
   if (existing) {
     return NextResponse.json({
       success: true,
-      message: "Already a student",
+      message: "Already a student — Clerk metadata updated. Sign out and back in, then go to /student/tutors.",
       studentId: existing.id,
       userId: user.id,
     });
