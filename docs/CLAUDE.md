@@ -296,8 +296,8 @@ When you need context beyond this file, reference:
 **Update this section at the start of every session.**
 
 ```
-Sprint: Sprint 5 — Virtual Classroom (complete)
-Goal: 100ms-powered video classroom for confirmed bookings
+Sprint: Sprint 6 — Post-session flow (complete)
+Goal: Tutor-triggered session completion, post-session notes, student review, payment release
 
 Last completed:
 - Sprint 1: Student onboarding (registration, 20-question diagnostic, mastery heatmap)
@@ -308,6 +308,11 @@ Last completed:
 - Sprint 5: Virtual classroom — 100ms room creation via Inngest at T-5min, token API, shared Classroom
             component (hms-video-store), /student/classroom/[sessionId], /tutor/classroom/[sessionId],
             "Join Session" button on both booking pages when hmsRoomId is set
+- Sprint 6: Post-session flow — tutor "Mark Session Complete" button in classroom, POST /api/sessions/[id]/complete
+            (proxy timestamps, fires session/completed Inngest event), /tutor/post-session/[sessionId] form
+            (objective, notes, homework), POST /api/sessions/[id]/post-session, student star review form
+            embedded in /student/bookings, POST /api/sessions/[id]/review, Inngest releasePayment function
+            (2h dispute window then paymentStatus → released)
 
 Sprint 5 notes (100ms):
   SDK choice: @100mslive/server-sdk (server-side) + @100mslive/hms-video-store (client, vanilla JS).
