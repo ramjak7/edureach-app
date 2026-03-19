@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, User, IndianRupee } from "lucide-react";
+import { SessionReviewForm } from "@/components/student/session-review-form";
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   pending: { label: "Awaiting tutor", className: "bg-amber-100 text-amber-800 border-amber-300" },
@@ -39,7 +40,16 @@ export default async function StudentBookingsPage() {
     include: {
       tutor: { select: { displayName: true, subjects: true } },
       slot: { select: { slotStart: true, slotEnd: true } },
-      session: { select: { id: true, hmsRoomId: true } },
+      session: {
+        select: {
+          id: true,
+          hmsRoomId: true,
+          tutorPostSessionNotes: true,
+          tutorObjectiveAchieved: true,
+          homeworkAssigned: true,
+          review: { select: { id: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -106,6 +116,38 @@ export default async function StudentBookingsPage() {
             >
               Join Session
             </Link>
+          )}
+
+          {booking.status === "completed" && booking.session?.tutorPostSessionNotes && (
+            <div className="bg-muted/50 rounded-lg p-3 space-y-1.5 text-sm">
+              <p className="font-medium">Session notes from tutor</p>
+              {booking.session.tutorObjectiveAchieved && (
+                <span className={`inline-block text-xs px-2 py-0.5 rounded-full border ${
+                  booking.session.tutorObjectiveAchieved === "achieved"
+                    ? "bg-green-100 text-green-800 border-green-300"
+                    : booking.session.tutorObjectiveAchieved === "partially"
+                    ? "bg-yellow-100 text-yellow-800 border-yellow-300"
+                    : "bg-red-100 text-red-700 border-red-300"
+                }`}>
+                  {booking.session.tutorObjectiveAchieved === "achieved"
+                    ? "Objective achieved"
+                    : booking.session.tutorObjectiveAchieved === "partially"
+                    ? "Partially achieved"
+                    : "Objective not achieved"}
+                </span>
+              )}
+              <p className="text-muted-foreground">{booking.session.tutorPostSessionNotes}</p>
+              {booking.session.homeworkAssigned && (
+                <p className="text-xs text-amber-700 font-medium">Homework assigned</p>
+              )}
+            </div>
+          )}
+
+          {booking.status === "completed" && booking.session && !booking.session.review && (
+            <SessionReviewForm
+              sessionId={booking.session.id}
+              tutorName={booking.tutor.displayName}
+            />
           )}
         </CardContent>
       </Card>

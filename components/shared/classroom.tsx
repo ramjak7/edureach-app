@@ -5,8 +5,7 @@
  * Replace this component with the real HMSReactiveStore-based implementation
  * once HMS_ACCESS_KEY and HMS_SECRET are added and a room template is configured.
  * See CLAUDE.md â†’ Sprint 5 notes for full implementation details.
- */
-import { useRouter } from "next/navigation";
+ */import { useState } from "react";import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Video, Clock, User, BookOpen } from "lucide-react";
@@ -33,6 +32,21 @@ export function Classroom({
   backHref,
 }: ClassroomProps) {
   const router = useRouter();
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
+
+  const handleMarkComplete = async () => {
+    setIsCompleting(true);
+    setCompleteError(null);
+    const res = await fetch(`/api/sessions/${sessionId}/complete`, { method: "POST" });
+    if (res.ok) {
+      router.push(`/tutor/post-session/${sessionId}`);
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setCompleteError(data.error ?? "Failed to complete session");
+      setIsCompleting(false);
+    }
+  };
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleString("en-IN", {
@@ -93,13 +107,27 @@ export function Classroom({
           Video calling is being integrated. Use an external video link (Google Meet, Zoom) for this session.
         </div>
 
-        <Button
-          variant="destructive"
-          className="w-full"
-          onClick={() => router.push(backHref)}
-        >
-          End Session
-        </Button>
+        {completeError && (
+          <p className="text-sm text-red-400">{completeError}</p>
+        )}
+
+        {role === "tutor" ? (
+          <Button
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+            onClick={handleMarkComplete}
+            disabled={isCompleting}
+          >
+            {isCompleting ? "Completing…" : "Mark Session Complete"}
+          </Button>
+        ) : (
+          <Button
+            variant="destructive"
+            className="w-full"
+            onClick={() => router.push(backHref)}
+          >
+            End Session
+          </Button>
+        )}
       </div>
     </div>
   );

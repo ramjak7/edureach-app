@@ -161,6 +161,14 @@ Now you have a working skeleton. Phase 1 builds everything needed for real stude
 
 > "Build the post-session flow. When 100ms sends a session-ended webhook to `/api/sessions/webhook`: (1) Compute actual duration from join/leave timestamps. (2) Check session verification conditions (PRD Section 12A.2): classroom live ≥ 85%, both parties present ≥ 75%, recording exists. (3) Set `sessions.verification_status` accordingly. (4) Send post-session summary to student (in-app + WhatsApp if opted in). (5) Send post-session form to tutor at `/tutor/post-session/[sessionId]` — tutor logs: objective achieved (yes/partial/no), homework assigned (yes/no), notes. (6) Start 2-hour dispute window Inngest delay job."
 
+**Implementation note (as-built deviation):**
+The HMS webhook trigger described above is deferred until 100ms credentials are configured.
+Sprint 6 was built with tutor-triggered completion instead:
+- Tutor taps "Mark Session Complete" on the classroom placeholder page → redirected to post-session notes form
+- `sessions.actualStartAt` and `sessions.actualEndAt` are NOT set by the placeholder (no HMS events)
+- When real HMS video is restored (see Sprint 5 notes in CLAUDE.md), add `/api/sessions/webhook`
+  to populate those two timestamps from HMS join/leave events — Sprint 6 logic is otherwise untouched
+
 ---
 
 ### Sprint 7 — Parent App (Week 8–9)

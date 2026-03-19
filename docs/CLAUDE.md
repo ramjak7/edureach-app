@@ -330,6 +330,16 @@ Sprint 5 notes (100ms):
   All server-side infrastructure (lib/hms.ts, /api/sessions/create-room, /api/sessions/[id]/token,
   inngest create-classroom function) is fully built and untouched.
 
+  Sprint 5 → Sprint 6 seam (read before restoring real video):
+  The two session lifecycle timestamps that HMS webhooks would normally populate are:
+    - sessions.actualStartAt  → set when both parties join the HMS room
+    - sessions.actualEndAt    → set when the session ends via HMS webhook
+  The placeholder currently sets NEITHER. Sprint 6 is built around tutor-triggered completion
+  ("Mark Session Complete" button → redirect to post-session notes form), which is the correct
+  UX regardless. When real HMS is restored, add a webhook handler at /api/sessions/webhook that
+  populates these two fields from HMS join/leave events — Sprint 6 logic is untouched, it just
+  gains more accurate timestamps as a background improvement.
+
 Auth deviation (important):
   Phone/OTP sign-in was deferred during Sprint 1 due to Clerk phone config issues (Indian carrier
   SMS setup not completed). Clerk is currently configured with EMAIL as the primary identifier.
