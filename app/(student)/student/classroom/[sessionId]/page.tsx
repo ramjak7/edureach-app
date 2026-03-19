@@ -22,7 +22,16 @@ export default async function StudentClassroomPage({
 
   const session = await db.session.findUnique({
     where: { id: sessionId },
-    include: { booking: { select: { studentId: true } } },
+    include: {
+      booking: {
+        select: {
+          studentId: true,
+          sessionFocus: true,
+          slot: { select: { slotStart: true, slotEnd: true } },
+          tutor: { select: { displayName: true } },
+        },
+      },
+    },
   });
 
   if (!session || session.booking.studentId !== user.student.id) {
@@ -30,12 +39,15 @@ export default async function StudentClassroomPage({
   }
 
   return (
-    <div className="h-screen flex flex-col">
-      <Classroom
-        sessionId={sessionId}
-        role="student"
-        displayName={user.student.displayName}
-      />
-    </div>
+    <Classroom
+      sessionId={sessionId}
+      role="student"
+      displayName={user.student.displayName}
+      otherPartyName={session.booking.tutor.displayName}
+      subject={session.booking.sessionFocus}
+      slotStart={session.booking.slot?.slotStart.toISOString() ?? null}
+      slotEnd={session.booking.slot?.slotEnd.toISOString() ?? null}
+      backHref="/student/bookings"
+    />
   );
 }

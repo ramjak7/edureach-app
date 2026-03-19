@@ -319,6 +319,17 @@ Sprint 5 notes (100ms):
   Required Inngest env vars in Vercel: INNGEST_EVENT_KEY + INNGEST_SIGNING_KEY.
   SessionVerificationStatus enum has "pending" as initial state (added via migration).
 
+  ⚠️  VIDEO NOT YET INTEGRATED (placeholder active):
+  components/shared/classroom.tsx is currently a placeholder page (dark screen with session info
+  + "End Session" button). The full HMSReactiveStore implementation is written and ready but
+  commented out / replaced pending 100ms dashboard setup. To activate real video:
+    1. Create a room template in 100ms dashboard with roles "host" (tutor) and "guest" (student)
+    2. Add HMS_ACCESS_KEY + HMS_SECRET to .env.local and Vercel env vars
+    3. Restore the HMSReactiveStore implementation in components/shared/classroom.tsx
+       (full code is in git history — Sprint 5 commit before "placeholder" commit)
+  All server-side infrastructure (lib/hms.ts, /api/sessions/create-room, /api/sessions/[id]/token,
+  inngest create-classroom function) is fully built and untouched.
+
 Auth deviation (important):
   Phone/OTP sign-in was deferred during Sprint 1 due to Clerk phone config issues (Indian carrier
   SMS setup not completed). Clerk is currently configured with EMAIL as the primary identifier.
