@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
   "/sign-in(.*)",
   "/sign-up(.*)",
   "/api/auth/webhook(.*)",
+  "/api/inngest(.*)",
 ]);
 
 // Route home for each role — used for redirects after login

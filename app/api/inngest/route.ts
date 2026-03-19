@@ -5,7 +5,11 @@ import { releasePayment } from "@/inngest/functions/release-payment";
 
 export const dynamic = "force-dynamic";
 
-export const { GET, POST, PUT } = serve({
+const handler = serve({
   client: inngest,
   functions: [createClassroom, releasePayment],
 });
+
+export const GET = handler.GET;
+export const POST = handler.POST;
+export const PUT = handler.PUT;
